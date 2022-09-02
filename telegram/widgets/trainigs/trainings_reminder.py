@@ -20,7 +20,8 @@ async def reminder_trainings(bot: Bot):
         freq = await storage.get_key(StorageKeys.TRAINING_FREQUENCY, user=user)
         pdate = await storage.get_key(StorageKeys.PREVIOUS_MESSAGE_DATE, user=user)
 
-        if not pdate or int(pdate) < (datetime.datetime.now() - datetime.timedelta(hours=int(freq))).timestamp():
+        if int(freq) > 0 and (not pdate or int(pdate) < (
+                datetime.datetime.now() - datetime.timedelta(hours=int(freq))).timestamp()):
             state = await storage.get_state(user=user)
             if not state:
                 text, markup = await training_select_message_generator()

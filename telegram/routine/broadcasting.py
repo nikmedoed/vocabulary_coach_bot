@@ -1,4 +1,3 @@
-from sqlalchemy.orm import sessionmaker
 from aiogram_broadcaster import MessageBroadcaster, TextBroadcaster
 from aiogram import types
 from typing import Union, List

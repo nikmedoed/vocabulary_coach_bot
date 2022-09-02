@@ -23,7 +23,9 @@ class General(EnumContent):
                "Комманды бота:\n"
                "{}\n"
                "\n"
-               "Если бот работает некорректно, писать @nikmedoed"
+               "Если бот работает некорректно, писать @nikmedoed\n\n"
+               "<a href='https://gist.github.com/nikmedoed/119abe998466e2c05376768f97363e61'>"
+               "Список способов поддержать проекты монетой</a>"
            ).format('\n'.join([f'/{k.name} - {k}' for k in Commands])),
     privacy = ("Бот хранит все ответы на вопросы, которые влияют на его работу:\n"
                "<pre>- Ваш id\n"
@@ -129,7 +131,6 @@ class Trainings(EnumContent):
     remind_read = "Ок, продолжаем"
     remind_pause = "⏸ Отложить на {}ч"
     remind_pause_ok = "Напомню через {}ч"
-
 
 
 class Misc(EnumContent):

@@ -96,7 +96,8 @@ async def frequency_set(query: types.CallbackQuery, storage: RedisStorage2ext, c
     freq = callback_data['hours']
     old_freq = await storage.get_key(StorageKeys.TRAINING_FREQUENCY, user=query.from_user.id)
     await storage.set_key(StorageKeys.TRAINING_FREQUENCY, value=freq, user=query.from_user.id)
-    await query.message.edit_reply_markup(await frequency_generate_keyboard(query.from_user.id, storage))
+    if (old_freq or '0') != freq:
+        await query.message.edit_reply_markup(await frequency_generate_keyboard(query.from_user.id, storage))
     await query.answer(Text.settings.frequency_set.value.format(freq) if int(freq) else Text.settings.frequency_set_no)
     if not old_freq:
         await training_select_message(query.message, **extra_data)

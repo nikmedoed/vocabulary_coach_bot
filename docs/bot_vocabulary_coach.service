@@ -1,0 +1,15 @@
+[Unit]
+Description=Vocabulary coach bot
+After=network.target
+
+[Service]
+User=sirne
+Group=sirne
+Type=simple
+WorkingDirectory=/home/sirne/vocabulary_coach_bot
+ExecStart=python3 bot_tg.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -11,7 +11,7 @@ from telegram.texts import Text
 async def watch_fire_indicator(message: types.Message,
                                text: str,
                                markup: typing.Union[types.InlineKeyboardMarkup, types.ReplyKeyboardMarkup] = None,
-                               indicators: typing.Union[str, list[str]] = Text.misc.eyes.value):
+                               indicators: typing.Union[str, typing.List[str]] = Text.misc.eyes.value):
     try:
         i = 1
         while i < 6:

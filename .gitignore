@@ -129,3 +129,4 @@ dmypy.json
 global_settings.ini
 **/examples/
 telegram/examples/test.py
+docs/misc

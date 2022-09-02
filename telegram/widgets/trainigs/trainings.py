@@ -2,7 +2,6 @@ import typing
 
 from aiogram import types, filters, Dispatcher
 from aiogram.dispatcher import FSMContext
-from sqlalchemy.util import asyncio
 
 from telegram.texts import Text
 from telegram.utils.aiogram_redis_ext import RedisStorage2ext

@@ -6,7 +6,6 @@ from aiogram import types, Dispatcher
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.dispatcher.middlewares import LifetimeControllerMiddleware
 from aiogram.utils.exceptions import MessageError
-from sqlalchemy.orm import sessionmaker
 
 from telegram.utils.aiogram_redis_ext import RedisStorage2ext
 from telegram.utils.constants import StorageKeys
