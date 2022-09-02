@@ -16,6 +16,8 @@ from telegram.widgets.trainigs.trainings_generate import (
 import asyncio
 
 
+
+# TODO обработка ошибок, т.к. если слов меньше 16, нет смысла в режиме выбора и таблица сообщает о невозможности режима
 async def training_select_message(message: typing.Union[types.Message, types.CallbackQuery],
                                   state: FSMContext = "", **extra):
     if type(message) is types.CallbackQuery:
