@@ -10,7 +10,7 @@ from telegram.utils.aiogram_redis_ext import RedisStorage2ext
 from telegram.utils.constants import StorageKeys
 from telegram.utils.spreadsheet_connector import SpreadSheetConnector
 from telegram.widgets.trainigs.trainings import training_select_message
-
+from telegram.utils.database_update import DATABASE_VERSION
 
 def settings_generate_markup():
     return types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True, selective=True).add(*[
@@ -47,6 +47,10 @@ async def sheet_url_check(message: types.Message, state: FSMContext, storage: Re
         try:
             url = result.group(0)
             version = await SpreadSheetConnector.check_version(url)
+            if version != DATABASE_VERSION:
+                await message.reply(Text.start.database_old_version)
+                return
+
             await storage.set_key(StorageKeys.SHEET_URL, value=url, user=message.from_user.id)
             await state.finish()
             freq = await storage.get_key(StorageKeys.TRAINING_FREQUENCY, user=message.from_user.id)

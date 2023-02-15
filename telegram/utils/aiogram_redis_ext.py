@@ -1,6 +1,7 @@
 import typing
 
 from aiogram.contrib.fsm_storage.redis import RedisStorage2
+from collections import defaultdict
 
 
 class RedisStorage2ext(RedisStorage2):
@@ -23,8 +24,21 @@ class RedisStorage2ext(RedisStorage2):
         else:
             await redis.delete(key)
 
-    async def get_all_users(self, key):
+    async def get_all_users_keys(self, key="*"):
         key = self.generate_key("*", "*", str(key))
         redis = await self._get_adapter()
-        keys = await redis.keys(key)
-        return [k.split(":")[2] for k in keys]
+        return await redis.keys(key)
+
+    async def get_all_users(self, key="*"):
+        keys = await self.get_all_users_keys(key)
+        return set([k.split(":")[2] for k in keys])
+
+    async def get_all_users_values(self, key="*") -> dict:
+        keys = await self.get_all_users_keys(key)
+        user_values = defaultdict(dict)
+        redis = await self._get_adapter()
+        for key in keys:
+            user, value_key = key.split(":")[-2:]
+            value = await redis.get(key)
+            user_values[user][value_key] = value
+        return user_values

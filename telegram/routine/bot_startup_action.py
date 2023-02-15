@@ -6,6 +6,7 @@ from aiogram import Dispatcher
 from telegram.routine.broadcasting import broadcast_admin
 from telegram.texts import Text
 from telegram.widgets.trainigs.trainings_reminder import reminder_trainings
+from telegram.utils.database_update import user_database_update
 
 
 async def scheduler(bot):
@@ -21,3 +22,4 @@ async def bot_startup_action(dp: Dispatcher):
     bot = dp.bot
     dp.loop.create_task(scheduler(bot))  # доступно для динамического
     await broadcast_admin(bot, Text.general.bot_started)
+    await user_database_update(bot)

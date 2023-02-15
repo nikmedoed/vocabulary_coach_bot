@@ -7,13 +7,16 @@ from telegram.utils.constants import StorageKeys
 from telegram.utils.spreadsheet_connector import SpreadSheetConnector
 from telegram.widgets.trainigs.trainings_generate import generate_question_message
 
+ANSWER_FIELDS = ['id', 'word']
+
 
 async def training_result_to_sheet(user_id: typing.Union[int, str], storage: RedisStorage2ext, bucket: dict = None):
     if not bucket:
         bucket = await storage.get_bucket(user=user_id)
     answer = bucket.get('answer')
     if answer and int(answer['attempts']) > 0:
-        answer['word'] = bucket['question']['word']
+        for i in ANSWER_FIELDS:
+            answer[i] = bucket['question'][i]
         url = await storage.get_key(StorageKeys.SHEET_URL, user=user_id)
         await SpreadSheetConnector.set_result(url, answer)
 
@@ -34,5 +37,3 @@ async def training_send_new_question(user_id: typing.Union[int, str],
     reply = await bot.send_message(user_id, **generate_question_message(question, train_type))
     await storage.set_key(StorageKeys.CURRENT_QUESTION_ID, reply.message_id, user=user_id)
     return reply
-
-

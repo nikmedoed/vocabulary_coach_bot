@@ -4,7 +4,6 @@ from aiogram import Bot, Dispatcher
 
 from .handlres_main import register_routers
 from .middleware import register_middleware
-from telegram.utils.spreadsheet_connector import SpreadSheetConnector
 from .utils.aiogram_redis_ext import RedisStorage2ext
 from .utils.config_types import Config
 from .utils.updatesworker import get_handled_updates_list

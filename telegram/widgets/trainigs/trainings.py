@@ -15,7 +15,6 @@ from telegram.widgets.trainigs.trainings_generate import (
 import asyncio
 
 
-
 # TODO обработка ошибок, т.к. если слов меньше 16, нет смысла в режиме выбора и таблица сообщает о невозможности режима
 async def training_select_message(message: typing.Union[types.Message, types.CallbackQuery],
                                   state: FSMContext = "", **extra):
@@ -37,7 +36,8 @@ async def training_show_hint(query: types.CallbackQuery, storage: RedisStorage2e
 async def training_next_message(query: types.CallbackQuery, storage: RedisStorage2ext):
     bucket = await storage.get_bucket(user=query.from_user.id)
     question = bucket.get('question')
-    text = Text.trainings.answer.value.format(**question)
+    text = (Text.trainings.answer.value.format(**question) +
+            (f"\n\n{Text.trainings.hint.value.format(question['hint'])}" if question['hint'] else ""))
     await asyncio.gather(
         query.answer(),
         training_send_new_question(query.from_user.id, query.bot),

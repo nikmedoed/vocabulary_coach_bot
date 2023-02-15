@@ -51,7 +51,7 @@ def generate_question_message(question: dict, train_type: str, hint=False):
     text = Text.trainings.question.value.format(
         question=question['question'],
         hint=Text.trainings.hint.value.format(
-            question['hint'] if question['hint'] else Text.trainings.hint_no.value
+            question['hint'] + "\n" if question['hint'] else Text.trainings.hint_no.value
         ) if hint else "",
         instruction=Text.trainings[f"instruction_{train_type}"]
     )
