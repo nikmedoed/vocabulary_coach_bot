@@ -6,7 +6,7 @@ from telegram.utils.aiogram_redis_ext import RedisStorage2ext
 from telegram.utils.constants import StorageKeys
 from telegram.utils.spreadsheet_connector import SpreadSheetConnector
 from telegram.widgets.trainigs.trainings_generate import generate_question_message
-
+from .trainings_chache import TRAININGS_CHACHE
 ANSWER_FIELDS = ['id', 'word']
 
 
@@ -24,7 +24,7 @@ async def training_result_to_sheet(user_id: typing.Union[int, str], storage: Red
 async def get_new_question(user_id: typing.Union[int, str], storage: RedisStorage2ext, qtype=None):
     url = await storage.get_key(StorageKeys.SHEET_URL, user=user_id)
     train_type = (await storage.get_state(user=user_id)).split(":")[-1]
-    question = await getattr(SpreadSheetConnector, train_type)(url)
+    question = await TRAININGS_CHACHE.get_question(user_id, train_type, url)
     await storage.update_bucket(user=user_id, question=question, answer={"attempts": 0, "guessed": 0})
     return question, train_type
 

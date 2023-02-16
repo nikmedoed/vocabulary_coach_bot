@@ -10,15 +10,21 @@ class SpreadSheetConnector:
         }, sheet_url))['version']
 
     @staticmethod
-    async def training_type_the_answer(sheet_url):
+    async def training_type_the_answer(sheet_url, count=1):
         return await google_ask({
-            "method": "get_word"
+            "method": "get_word",
+            "data": {
+                "count": count
+            }
         }, sheet_url)
 
     @staticmethod
-    async def training_select_one(sheet_url):
+    async def training_select_one(sheet_url, count=1):
         return await google_ask({
-            "method": "get_words"
+            "method": "get_words",
+            "data": {
+                "count": count
+            }
         }, sheet_url)
 
     @staticmethod
