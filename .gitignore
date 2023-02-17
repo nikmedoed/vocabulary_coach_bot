@@ -130,3 +130,4 @@ global_settings.ini
 **/examples/
 telegram/examples/test.py
 docs/misc
+sheet_tests/
