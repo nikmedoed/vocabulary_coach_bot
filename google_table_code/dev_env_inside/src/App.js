@@ -1,12 +1,3 @@
-// TODO
-
-// Механизм обновления, т.е. проверка и сохранение версий, а также пошаговое автоматическое безопасное обновление данных в таблице
-
-// подбирать варианты схожие по длине по возможности
-
-// Отдельная колонка для транскрипций
-
-
 const SSheet = SpreadsheetApp.getActiveSpreadsheet()
 const Sheet = SSheet.getSheetByName("Words")
 const COLNAMES = getColNames()
@@ -53,19 +44,6 @@ function test() {
     }))
   }
 
-  // i = 0
-  // answers = {}
-  // answrs = []
-  // while (i < 100) {
-  // ans = getWord()
-  // Logger.log(ans)  
-  //   answers[ans.word] = answers[ans.word] || 0
-  //   answers[ans.word]++
-  //   answrs.push(ans.word)
-  //   i++
-  // }
-  // Logger.log(answers)
-  // Logger.log(answrs)
 }
 
 function checkVersion() {
@@ -129,15 +107,6 @@ function getWordsForQuestions(count, previously_asked) {
     selectedWords = get_random_elements(fresh, count)
   }
 
-  // data.sort((a, b) => (a[COLNAMES.asked] || 0) - (b[COLNAMES.asked] || 0))
-  // let minimal = (data[0][COLNAMES.asked] || 0) + 1
-  // data = data.filter(el => !el[COLNAMES.asked] || el[COLNAMES.asked] < minimal)
-  // Было <=, решил пока брать самые неспрошенные
-  // Работало плохо, спрашивало ток новые слова, а на старые забивало
-  // В идеале вывести метрику, но есть проблема:
-  // Опираться на верность ответов - забить на перу раз сразу угаданные
-  // На количество запросов - забивать на старые
-
   return selectedWords
 }
 
@@ -186,12 +155,13 @@ function getWord(params = {}) {
   var questions = selectedWords.map(w => packWordRow(w))
 
   // Обновить хранилище
-  const totalWords = Sheet.getLastRow() - 1
-  while (previously_asked.length > ((totalWords * 2 / 3) - questions.length)) {
-    previously_asked.pop()
-  }
-  properties.setProperty('previously_asked', JSON.stringify([...questions.map(w => w.id), ...previously_asked]))
+  const totalWords = Sheet.getLastRow() - 1;
+  const maxQueueSize = (totalWords * 2 / 3) - questions.length;
+  const numberOfElementsToRemove = Math.max(previously_asked.length - maxQueueSize, 0);
+  previously_asked = previously_asked.slice(numberOfElementsToRemove);
 
+  properties.setProperty('previously_asked', JSON.stringify([...previously_asked, ...questions.map(w => w.id)]))
+  
   return retrunFix(questions)
 }
 
