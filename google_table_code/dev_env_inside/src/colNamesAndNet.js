@@ -41,12 +41,12 @@ function getColNames() {
 function createOutput(data) {
   return ContentService.createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON)
-    .setHeaders({
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST',
-      'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept'
-    })
+  // .setHeaders({
+  //   'Content-Type': 'application/json',
+  //   'Access-Control-Allow-Origin': '*',
+  //   'Access-Control-Allow-Methods': 'POST',
+  //   'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept'
+  // })
 }
 
 
@@ -57,16 +57,6 @@ function doPost(e) {
   } catch (err) {
     return createOutput({ error: "Глобальная ошибка базы", data: err })
   }
-  // switch (raw.method) {
-  //   case "get_word":
-  //     return createOutput({ ok:  })
-  //   case "get_words":
-  //     return createOutput({ ok: getWords() })
-  //   case "set_result":
-  //     return createOutput({ ok: setResults(raw.data) })
-  //   default:
-  //     return createOutput({ error: "Глобальная ошибка базы" })
-  // }
 }
 
 
