@@ -1,6 +1,11 @@
 
 function test() {
+  const properties = PropertiesService.getDocumentProperties() 
 
+  var previously_asked = properties.getProperty('previously_asked')
+  previously_asked = previously_asked ? JSON.parse(previously_asked) : []
+  Logger.log(previously_asked)
+  
     one = getWord()
     Logger.log(one)
     console.log(one.word, setResults({
