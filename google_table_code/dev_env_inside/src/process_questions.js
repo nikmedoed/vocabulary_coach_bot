@@ -39,8 +39,7 @@ function getWords(params = {}) {
   if (!(words instanceof Array)) {
     words = [words]
   }
-  var data = WordsSheet.getSheetValues(2, COLNAMES.word + 1, WordsSheet.getLastRow() - 1, 1)
-    .map((el) => el[0])
+  var data = getDataColumnValues(COLNAMES.word)
   words = words.map(word => setWrongVariants(word, data))
   return retrunFix(words)
 }
@@ -48,10 +47,21 @@ function getWords(params = {}) {
 
 // Добавить неправильные варианты к вопросу, к примеру, с выбором
 function setWrongVariants(word, data, count = 8) {
-  var variants = new Set([word.row - 2])
+  const mainWordLength = word.word.length; 
+  let lengthTolerance = Math.max(Math.ceil(mainWordLength * 0.33), 4)
+  const dataLength = data.length;
+  let attempts = 0;
+  const maxAttempts = Math.min(50 * count, dataLength)
+
+  var variants = new Set([word.word]);
   while (variants.size < count) {
-    variants.add(Math.floor(Math.random() * data.length))
+    const candidate = data[Math.floor(Math.random() * data.length)];
+    if (Math.abs(candidate.length - mainWordLength) <= lengthTolerance || Math.random() < (attempts / maxAttempts)) {
+      variants.add(candidate);
+    }
+    attempts++
   }
-  word.variants = shuffle(Array.from(variants).map(e => data[e]))
-  return word
+
+  word.variants = shuffle(Array.from(variants));
+  return word;
 }
