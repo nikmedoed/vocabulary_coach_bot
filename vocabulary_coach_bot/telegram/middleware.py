@@ -44,13 +44,13 @@ class PreviosMessageMiddleware(LifetimeControllerMiddleware):
         message_id = bucket.get("previous_message_id")
         if message_id:
             try:
-                await obj.bot.edit_message_reply_markup(
-                    chat_id, message_id,
-                    reply_markup=None
-                )
                 await self.manager.storage.update_bucket(
                     user=chat_id,
                     previous_message_id=None,
+                )
+                await obj.bot.edit_message_reply_markup(
+                    chat_id, message_id,
+                    reply_markup=None
                 )
             except MessageError as e:  # MessageNotModified
                 logging.error(f"PreviosMessageMiddleware - {e.__class__}: {e.text}")
