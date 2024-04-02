@@ -11,15 +11,20 @@ DATABASE_VERSION = '1.1'
 
 
 async def check_user_base_version(bot, user, sheet_url):
+    storage: RedisStorage2ext = bot["storage"]
     if sheet_url:
         version = await SpreadSheetConnector.check_version(sheet_url)
         if version != DATABASE_VERSION:
-            storage: RedisStorage2ext = bot["storage"]
             await storage.set_state(user=user)
             await storage.set_key(StorageKeys.SHEET_URL, "", chat=user)
             await bot.send_message(user, Text.start.database_old_version)
     else:
-        await bot.send_message(user, Text.start.database_no_link)
+        reminded = await storage.get_key(StorageKeys.SEND_SHEET_REMIND, chat=user)
+        if reminded:
+            await storage.delete_user_data(user)
+        else:
+            await bot.send_message(user, Text.start.database_no_link)
+            await storage.set_key(StorageKeys.SEND_SHEET_REMIND, True, chat=user)
 
 
 async def user_database_update(bot: Bot):
@@ -31,4 +36,4 @@ async def user_database_update(bot: Bot):
         try:
             await check_user_base_version(bot, u, v.get(StorageKeys.SHEET_URL.name))
         except Exception as e:
-            logging.error(f"PreviosMessageMiddleware - {e.__class__}: {e}")
+            logging.error(f"user_database_update - {e.__class__}: {e}")

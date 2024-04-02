@@ -12,6 +12,7 @@ from telegram.utils.spreadsheet_connector import SpreadSheetConnector
 from telegram.widgets.trainigs.trainings import training_select_message
 from telegram.utils.database_update import DATABASE_VERSION
 
+
 def settings_generate_markup():
     return types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True, selective=True).add(*[
         types.KeyboardButton(text=butt.value) for butt in Text.settings if butt.name.startswith("button_")
@@ -85,10 +86,12 @@ async def frequency_show_message(message: types.Message, storage: RedisStorage2e
 async def frequency_generate_keyboard(user_id, storage: RedisStorage2ext):
     freq = await storage.get_key(StorageKeys.TRAINING_FREQUENCY, user=user_id)
     freq = freq and int(freq)
-    markup = types.InlineKeyboardMarkup().row(*[types.InlineKeyboardButton(
-        f"{'✅ ' if fr == freq else ''}{fr}",
-        callback_data=frequency_cb.new(hours=fr)
-    ) for fr in [12, 24, 48, 72]])
+    markup = types.InlineKeyboardMarkup()
+    for row in [[3, 6, 9, 12], [18, 24, 48, 72]]:
+        markup.row(*[types.InlineKeyboardButton(
+            f"{'✅ ' if fr == freq else ''}{fr}",
+            callback_data=frequency_cb.new(hours=fr)
+        ) for fr in row])
     markup.add(types.InlineKeyboardButton(
         f"{'✅ ' if not freq else ''}{Text.settings.frequency_no}",
         callback_data=frequency_cb.new(hours=0)

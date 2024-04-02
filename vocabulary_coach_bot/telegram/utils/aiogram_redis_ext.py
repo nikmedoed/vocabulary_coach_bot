@@ -42,3 +42,30 @@ class RedisStorage2ext(RedisStorage2):
             value = await redis.get(key)
             user_values[user][value_key] = value
         return user_values
+
+    async def get_user_keys(self, user: typing.Union[str, int, None],
+                            chat: typing.Union[str, int, None] = "*") -> list:
+        """
+        Возвращает список всех ключей для конкретного пользователя
+        """
+        key = self.generate_key(chat, user, "*")
+        redis = self._redis
+        return await redis.keys(key)
+
+    async def delete_user_data(self, user: typing.Union[str, int], chat: typing.Union[str, int, None] = "*") -> None:
+        """
+        Удаляет все ключи для конкретного пользователя
+        """
+        user_keys = await self.get_user_keys(user, chat)
+        redis = self._redis
+        if user_keys:
+            await redis.delete(*user_keys)
+
+    async def delete_user_personal_data(self, user: typing.Union[str, int]) -> None:
+        """
+        Удаляет все ключи в личном чате пользователя
+        """
+        user_keys = await self.get_user_keys(user, user)
+        redis = self._redis
+        if user_keys:
+            await redis.delete(*user_keys)
