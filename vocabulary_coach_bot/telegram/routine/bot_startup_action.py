@@ -1,25 +1,20 @@
-import asyncio
-
-import aioschedule
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiogram import Dispatcher
-
 from telegram.routine.broadcasting import broadcast_admin
 from telegram.texts import Text
 from telegram.widgets.trainigs.trainings_reminder import reminder_trainings
 from telegram.utils.database_update import user_database_update
 
 
-async def scheduler(bot):
-    # aioschedule.every(1).seconds.do(reminder_trainings, bot=bot)
-    aioschedule.every(5).minutes.do(reminder_trainings, bot=bot)
-    while True:
-        await aioschedule.run_pending()
-        await asyncio.sleep(30)
-        # await asyncio.sleep(1)
+async def scheduler(dp: Dispatcher):
+    bot = dp.bot
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(reminder_trainings, 'interval',  minutes=5, args=[bot])
+    scheduler.start()
 
 
 async def bot_startup_action(dp: Dispatcher):
     bot = dp.bot
-    dp.loop.create_task(scheduler(bot))  # доступно для динамического
+    await scheduler(dp)
     await broadcast_admin(bot, Text.general.bot_started)
     await user_database_update(bot)

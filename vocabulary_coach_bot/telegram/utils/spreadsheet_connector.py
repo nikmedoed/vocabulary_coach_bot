@@ -7,7 +7,7 @@ class SpreadSheetConnector:
     async def check_version(sheet_url):
         return (await google_ask({
             "method": "check_version"
-        }, sheet_url))['version']
+        }, sheet_url)).get('version')
 
     @staticmethod
     async def training_type_the_answer(sheet_url, count=1):

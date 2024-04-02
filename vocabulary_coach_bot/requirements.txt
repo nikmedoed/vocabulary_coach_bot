@@ -1,5 +1,5 @@
-aiogram==2.21
+aiogram==2.25.2
 aiogram_broadcaster==0.0.7
-aiohttp==3.8.1
-aioschedule==0.5.2
-rapidfuzz==2.4.2
+aiohttp==3.8.6
+APScheduler==3.10.4
+rapidfuzz==3.6.1
