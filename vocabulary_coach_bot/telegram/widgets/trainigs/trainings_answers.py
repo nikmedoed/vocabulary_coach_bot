@@ -19,7 +19,7 @@ async def answer_training_type_the_answer(message: types.Message, storage: Redis
     bot = message.bot
     bucket = await storage.get_bucket(user=user_id)
     question = bucket.get('question')
-    score = fuzz.QRatio(question['word'], message.text)
+    score = fuzz.QRatio(str(question['word']).lower(), str(message.text).lower())
 
     text = "error"
     for i in sorted(ANSWERS.keys(), reverse=True):
