@@ -23,8 +23,8 @@ async def check_user_base_version(bot, user, sheet_url):
         if reminded:
             await storage.delete_user_data(user)
         else:
-            await bot.send_message(user, Text.start.database_no_link)
             await storage.set_key(StorageKeys.SEND_SHEET_REMIND, True, chat=user)
+            await bot.send_message(user, Text.start.database_no_link)
 
 
 async def user_database_update(bot: Bot):
@@ -36,4 +36,4 @@ async def user_database_update(bot: Bot):
         try:
             await check_user_base_version(bot, u, v.get(StorageKeys.SHEET_URL.name))
         except Exception as e:
-            logging.error(f"user_database_update - {e.__class__}: {e}")
+            logging.error(f"user_database_update - {e.__class__}: {e} {u, v}")
