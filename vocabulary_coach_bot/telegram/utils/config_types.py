@@ -1,5 +1,4 @@
 import configparser
-import os
 import typing
 from dataclasses import dataclass
 

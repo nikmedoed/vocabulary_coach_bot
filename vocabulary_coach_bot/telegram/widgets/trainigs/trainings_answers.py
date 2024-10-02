@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
@@ -14,13 +15,27 @@ ANSWERS = {int(i[len('answer_score_'):]): str(k) for i, k in Text.trainings.__di
            i.startswith('answer_score_')}
 
 
+def calculate_number_similarity(user_answer: int, correct_answer: int) -> int:
+    divisor = max(10, abs(correct_answer))
+    difference = abs(user_answer - correct_answer) / divisor * 100
+    similarity = max(0, round(100 - difference))
+    return similarity
+
+
 async def answer_training_type_the_answer(message: types.Message, storage: RedisStorage2ext, state: FSMContext):
     user_id = message.from_user.id
     bot = message.bot
     bucket = await storage.get_bucket(user=user_id)
     question = bucket.get('question')
-    score = fuzz.QRatio(str(question['word']).strip().lower(), str(message.text).strip().lower())
 
+    try:
+        correct_answer = int(question['word'])
+        user_answer = int(message.text)
+        score = calculate_number_similarity(user_answer, correct_answer)
+    except ValueError:
+        score = fuzz.QRatio(str(question['word']).strip().lower(), str(message.text).strip().lower())
+
+    logging.info(f"score {score}" )
     text = "error"
     for i in sorted(ANSWERS.keys(), reverse=True):
         if score >= i:
@@ -57,6 +72,7 @@ async def answer_training_select_one(query: types.CallbackQuery, storage: RedisS
         bucket = await storage.get_bucket(user=user_id)
         answer = bucket.get('answer', {"attempts": 0, "guessed": 0})
         word = bucket['question']['variants'][int(word)]
+        word_srt = str(word)
         answer['attempts'] += 1
         message = query.message
         markup = message.reply_markup
@@ -65,7 +81,7 @@ async def answer_training_select_one(query: types.CallbackQuery, storage: RedisS
             await query.answer(Text.trainings.answer_score_100)
             for row in keys:
                 for m in row:
-                    if m.text.endswith(word):
+                    if m.text.endswith(word_srt):
                         m.text = f"✅ {word}"
                     m.callback_data = training_select_one_button.new(word_number="")
             answer['guessed'] += 1
@@ -80,7 +96,7 @@ async def answer_training_select_one(query: types.CallbackQuery, storage: RedisS
             await storage.update_bucket(user=user_id, answer=answer)
             for row in keys:
                 for m in row:
-                    if m.text.endswith(word):
+                    if m.text.endswith(word_srt):
                         m.text = f"❌ {word}"
                         m.callback_data = training_select_one_button.new(word_number="")
             await asyncio.gather(
