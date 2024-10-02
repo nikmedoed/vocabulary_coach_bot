@@ -132,3 +132,6 @@ telegram/examples/test.py
 docs/misc
 sheet_tests/
 /vocabulary_coach_bot/data
+/*.png
+/*.jpeg
+/*.jpg
