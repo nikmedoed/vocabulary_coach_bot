@@ -1,4 +1,4 @@
-from aiogram_broadcaster import MessageBroadcaster, TextBroadcaster
+# from aiogram_broadcaster import MessageBroadcaster, TextBroadcaster
 from aiogram import types
 from typing import Union, List
 from aiogram import Bot
@@ -19,7 +19,8 @@ async def broadcast_message(message: types.Message, storage: RedisStorage2ext,
                 await message.forward(user)
                 await asyncio.sleep(.05)
         else:
-            await MessageBroadcaster(users, message).run()
+            pass
+            # await MessageBroadcaster(users, message).run()
     except Exception as e:
         await message.reply(f"Error in broadcasting for {len(users)} users: <code>{e}</code>")
 
