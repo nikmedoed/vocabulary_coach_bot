@@ -20,6 +20,9 @@ async def watch_fire_indicator(message: types.Message,
                 reply_markup=markup)
             i += 1
             await asyncio.sleep(2)
-        await message.delete()
+        try:
+            await message.delete()
+        except:
+            pass
     except MessageError:
         pass

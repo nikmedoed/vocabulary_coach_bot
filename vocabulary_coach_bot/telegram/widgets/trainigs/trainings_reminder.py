@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import logging
+
 from aiogram import Bot, types, Dispatcher
 from aiogram.utils.callback_data import CallbackData
 from aiogram.utils.exceptions import BotBlocked
@@ -47,7 +48,10 @@ async def reminder_trainings(bot: Bot):
                     user=user)
                 previous_message_id = await storage.get_key(StorageKeys.PREVIOUS_REMINDER_ID, user=user)
                 if previous_message_id:
-                    await bot.delete_message(user, previous_message_id)
+                    try:
+                        await bot.delete_message(user, previous_message_id)
+                    except:
+                        pass
                 await storage.set_key(
                     StorageKeys.PREVIOUS_REMINDER_ID,
                     message.message_id,
@@ -70,7 +74,10 @@ async def answer_training_reminder_pause(query: types.CallbackQuery, storage: Re
     pause = callback_data['action']
     user = query.from_user.id
     await query.answer(Text.trainings.remind_pause_ok.value.format(pause))
-    await query.message.delete()
+    try:
+        await query.message.delete()
+    except:
+        pass
     await storage.set_key(StorageKeys.PREVIOUS_REMINDER_ID, None, user=user)
     freq = await storage.get_key(StorageKeys.TRAINING_FREQUENCY, user=user)
     time = round((datetime.datetime.now() + datetime.timedelta(hours=int(pause) - int(freq))).timestamp())
