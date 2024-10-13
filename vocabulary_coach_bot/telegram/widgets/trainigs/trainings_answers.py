@@ -28,6 +28,10 @@ async def answer_training_type_the_answer(message: types.Message, storage: Redis
     bucket = await storage.get_bucket(user=user_id)
     question = bucket.get('question')
 
+    if not question or 'word' not in question:
+        await training_send_new_question(user_id, bot)
+        return
+
     try:
         correct_answer = int(question['word'])
         user_answer = int(message.text)
