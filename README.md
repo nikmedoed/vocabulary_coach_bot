@@ -48,18 +48,6 @@ https://t.me/vocabulary_coach_bot
 	- asyncio
 	- aiogram
 
-
----
-
-## Why Pishow?
-
-Many modern slideshow solutions rely on JavaScript and heavy frameworks that can cause compatibility issues on older
-devices. Pishow offers a minimalist, resource-efficient alternative by using:
-
-- **No Scripts:** Pure HTML with meta refresh.
-- **Customizable, Device-Specific Settings:** Each device can be tailored to its own capabilities.
-- **Low Resource Consumption:** Designed to run smoothly on legacy hardware.
-
 ## 💖 Support my work
 
 <table align="center" border="0" cellpadding="0" cellspacing="0">
