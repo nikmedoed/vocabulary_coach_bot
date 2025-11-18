@@ -29,5 +29,5 @@ async def broadcast_message(message: types.Message, storage: RedisStorage2ext,
 
 
 async def broadcast_admin(bot: Bot, text: str, **params):
-    config = bot.get("config")
+    config = getattr(bot, "config", None)
     return await bot.send_message(config.admin_id, text, **params)

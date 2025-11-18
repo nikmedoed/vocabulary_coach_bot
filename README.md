@@ -47,6 +47,3 @@ https://t.me/vocabulary_coach_bot
 - python
 	- asyncio
 	- aiogram
-
-## Как поддержать меня монетой
-[Актуальный список способов по ссылке](https://gist.github.com/nikmedoed/119abe998466e2c05376768f97363e61)

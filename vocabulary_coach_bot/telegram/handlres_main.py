@@ -1,25 +1,25 @@
 import logging
 
-from aiogram import types, filters, Bot, Dispatcher
-from aiogram.types import BotCommand, bot_command_scope
-from aiogram.utils.exceptions import TelegramAPIError, MessageNotModified, CantParseEntities
+from aiogram import Bot, Router, types
+from aiogram.exceptions import TelegramAPIError, TelegramBadRequest
+from aiogram.filters import Command, StateFilter
+from aiogram.types import BotCommand, BotCommandScopeAllPrivateChats, BotCommandScopeChat
+from aiogram.types.error_event import ErrorEvent
 
 from telegram.texts import Text
-from .filters import AdminFilter, IsUserFilter
-from .widgets import (
-    start_dialogue,
-    settings,
-    admin
-)
+from .filters import IsUserFilter
+from .widgets import admin, settings, start_dialogue
 from .widgets.trainigs import trainings
 
 
 async def set_bot_commands(bot: Bot):
-    commands = [BotCommand(command=k.name, description=k.value) for k in Text.commands]
-    await bot.set_my_commands(
-        commands,
-        scope=bot_command_scope.BotCommandScopeAllPrivateChats()
-    )
+    user_commands = [BotCommand(command=k.name, description=k.value) for k in Text.commands]
+    await bot.set_my_commands(user_commands, scope=BotCommandScopeAllPrivateChats())
+
+    admin_commands = [BotCommand(command=k.name, description=k.value) for k in Text.commands_admin]
+    if admin_commands:
+        admin_commands.extend(user_commands)
+        await bot.set_my_commands(admin_commands, scope=BotCommandScopeChat(chat_id=bot.config.admin_id))
 
 
 async def cmd_help(message: types.Message):
@@ -30,40 +30,34 @@ async def cmd_privacy(message: types.Message):
     await message.answer(Text.general.privacy)
 
 
-async def errors_handler(update, exception):
+async def errors_handler(event: ErrorEvent):
     """
     Exceptions handler. Catches all exceptions within task factory tasks.
-    :param dispatcher:
-    :param update:
-    :param exception:
-    :return: stdout logging
     """
-    if isinstance(exception, MessageNotModified):
-        logging.exception('Message is not modified')
+    update = event.update
+    exception = event.exception
+    if isinstance(exception, TelegramBadRequest):
+        logging.exception(f"TelegramBadRequest: {exception} \nUpdate: {update}")
         return True
-    if isinstance(exception, CantParseEntities):
-        logging.exception(f'CantParseEntities: {exception} \nUpdate: {update}')
+    if isinstance(exception, TelegramAPIError):
+        logging.exception(f"TelegramAPIError: {exception} \nUpdate: {update}")
         return True
-    if isinstance(exception, TelegramAPIError):  # MUST BE THE  LAST CONDITION
-        logging.exception(f'TelegramAPIError: {exception} \nUpdate: {update}')
-        return True
-    logging.exception(f'Update: {update} \n{exception}')
+    logging.exception(f"Update: {update} \n{exception}")
 
 
-async def register_routers(dp: Dispatcher):
-    await set_bot_commands(dp.bot)
+def register_routers() -> Router:
+    router = Router()
 
-    dp.filters_factory.bind(AdminFilter)
-    dp.filters_factory.bind(IsUserFilter)
+    trainings.register(router)
+    settings.register(router)
+    start_dialogue.register(router)
 
-    trainings.register(dp)
-    settings.register(dp)
-    start_dialogue.register(dp)
+    router.message.register(cmd_help, Command(commands=["help"]))
+    router.message.register(cmd_privacy, Command(commands=["privacy"]))
 
-    dp.register_message_handler(cmd_help, filters.CommandHelp())
-    dp.register_message_handler(cmd_privacy, filters.CommandPrivacy())
+    admin.register(router)
 
-    await admin.register(dp)
+    router.message.register(cmd_help, IsUserFilter(is_user=True), StateFilter(None))
+    router.errors.register(errors_handler)
 
-    dp.register_message_handler(cmd_help, state=None, is_user=True)
-    dp.register_errors_handler(errors_handler)
+    return router

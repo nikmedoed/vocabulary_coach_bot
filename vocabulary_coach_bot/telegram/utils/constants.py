@@ -14,3 +14,5 @@ class StorageKeys(Enum):
 
     def __repr__(self):
         return self.name
+
+TRAINING_FREQUENCY_OPTIONS = [3, 6, 9, 12, 18, 24, 48, 72]

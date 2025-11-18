@@ -1,15 +1,15 @@
 import asyncio
 import logging
 
-from aiogram import Dispatcher, types
-from aiogram.dispatcher import FSMContext
+from aiogram import Router, types
+from aiogram.filters import StateFilter
 from rapidfuzz import fuzz
 
 from telegram.texts import Text
 from telegram.utils.aiogram_redis_ext import RedisStorage2ext
 from telegram.utils.constants import StorageKeys
 from telegram.widgets.trainigs.trainings_common import training_result_to_sheet, training_send_new_question
-from telegram.widgets.trainigs.trainings_generate import Trainings, training_select_one_button
+from telegram.widgets.trainigs.trainings_generate import Trainings, TrainingSelectOneCallbackData
 
 ANSWERS = {int(i[len('answer_score_'):]): str(k) for i, k in Text.trainings.__dict__.items() if
            i.startswith('answer_score_')}
@@ -22,7 +22,7 @@ def calculate_number_similarity(user_answer: int, correct_answer: int) -> int:
     return similarity
 
 
-async def answer_training_type_the_answer(message: types.Message, storage: RedisStorage2ext, state: FSMContext):
+async def answer_training_type_the_answer(message: types.Message, storage: RedisStorage2ext):
     user_id = message.from_user.id
     bot = message.bot
     bucket = await storage.get_bucket(user=user_id)
@@ -39,7 +39,7 @@ async def answer_training_type_the_answer(message: types.Message, storage: Redis
     except ValueError:
         score = fuzz.QRatio(str(question['word']).strip().lower(), str(message.text).strip().lower())
 
-    logging.info(f"score {score}" )
+    logging.info(f"score {score}")
     text = "error"
     for i in sorted(ANSWERS.keys(), reverse=True):
         if score >= i:
@@ -62,35 +62,56 @@ async def answer_training_type_the_answer(message: types.Message, storage: Redis
     else:
         await storage.update_bucket(user=user_id, answer=answer)
     await asyncio.sleep(5)
-    await asyncio.gather(*post_actions)
+    for action in post_actions:
+        try:
+            await action
+        except Exception:
+            pass
 
 
-async def answer_training_select_one(query: types.CallbackQuery, storage: RedisStorage2ext, state: FSMContext,
-                                     callback_data: dict):
+async def answer_training_select_one(query: types.CallbackQuery, storage: RedisStorage2ext,
+                                     callback_data: TrainingSelectOneCallbackData):
     user_id = query.from_user.id
     bot = query.bot
-    word = callback_data['word_number']
-    if not word:
+    word_index = callback_data.word_number
+    if not word_index:
         await query.answer(Text.trainings.answer_select_one_none)
     else:
         bucket = await storage.get_bucket(user=user_id)
         answer = bucket.get('answer', {"attempts": 0, "guessed": 0})
-        word = bucket['question']['variants'][int(word)]
-        word_srt = str(word)
+        question = bucket['question']
+        variants = question['variants']
+        variant_idx = int(word_index)
+        if variant_idx >= len(variants):
+            await query.answer()
+            return
+        variant_value = variants[variant_idx]
         answer['attempts'] += 1
         message = query.message
         markup = message.reply_markup
-        keys = markup.inline_keyboard
-        if word == bucket['question']['word']:
+
+        variant_buttons = []
+        for row in markup.inline_keyboard:
+            for btn in row:
+                if btn.callback_data and btn.callback_data.startswith("TSOb"):
+                    variant_buttons.append(btn)
+
+        if variant_idx >= len(variant_buttons):
+            await query.answer()
+            return
+
+        selected_button = variant_buttons[variant_idx]
+        selected_button.text = f"{'✅' if variant_value == question['word'] else '❌'} {variant_value}"
+        selected_button.callback_data = TrainingSelectOneCallbackData(word_number="").pack()
+
+        if variant_value == question['word']:
             await query.answer(Text.trainings.answer_score_100)
-            for row in keys:
-                for m in row:
-                    if m.text.endswith(word_srt):
-                        m.text = f"✅ {word}"
-                    m.callback_data = training_select_one_button.new(word_number="")
             answer['guessed'] += 1
+            for btn in variant_buttons:
+                if btn is not selected_button and btn.callback_data:
+                    btn.callback_data = TrainingSelectOneCallbackData(word_number="").pack()
+            await message.edit_reply_markup(reply_markup=markup)
             await asyncio.gather(
-                message.edit_reply_markup(markup),
                 training_send_new_question(user_id, bot),
                 training_result_to_sheet(user_id, storage, bucket)
             )
@@ -98,21 +119,11 @@ async def answer_training_select_one(query: types.CallbackQuery, storage: RedisS
             await message.delete()
         else:
             await storage.update_bucket(user=user_id, answer=answer)
-            for row in keys:
-                for m in row:
-                    if m.text.endswith(word_srt):
-                        m.text = f"❌ {word}"
-                        m.callback_data = training_select_one_button.new(word_number="")
-            await asyncio.gather(
-                message.edit_reply_markup(markup),
-                query.answer(Text.trainings.answer_score_0)
-            )
+            await message.edit_reply_markup(reply_markup=markup)
+            await query.answer(Text.trainings.answer_score_0)
 
 
-def register(dispatcher: Dispatcher):
-    dispatcher.register_message_handler(answer_training_type_the_answer,
-                                        state=Trainings.training_type_the_answer)
-
-    dispatcher.register_callback_query_handler(answer_training_select_one,
-                                               training_select_one_button.filter(),
-                                               state=Trainings.training_select_one)
+def register(router: Router):
+    router.message.register(answer_training_type_the_answer, StateFilter(Trainings.training_type_the_answer))
+    router.callback_query.register(answer_training_select_one, TrainingSelectOneCallbackData.filter(),
+                                   StateFilter(Trainings.training_select_one))

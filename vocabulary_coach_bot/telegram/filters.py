@@ -1,36 +1,29 @@
 import typing
 
 from aiogram import types
-from aiogram.dispatcher.filters import BoundFilter
+from aiogram.filters import BaseFilter
 
-# from aiogram.dispatcher.handler import ctx_data
-# from aiogram.types.base import TelegramObject
 from telegram.utils.aiogram_redis_ext import RedisStorage2ext
 from telegram.utils.constants import StorageKeys
 
 
-class AdminFilter(BoundFilter):
-    key = 'admin'
-
+class AdminFilter(BaseFilter):
     def __init__(self, admin: typing.Optional[bool] = None):
         self.admin = admin
 
-    async def check(self, message: types.Message) -> bool:
+    async def __call__(self, message: types.Message) -> bool:
         if self.admin is None:
             return True
-        return message.bot.get("config").admin_id == message.from_user.id
-        # ) == self.admin
+        return message.bot.config.admin_id == message.from_user.id
 
 
-class IsUserFilter(BoundFilter):
-    key = 'is_user'
-
+class IsUserFilter(BaseFilter):
     def __init__(self, is_user: typing.Optional[bool] = None):
         self.is_user = is_user
 
-    async def check(self, message: types.Message) -> bool:
+    async def __call__(self, message: types.Message) -> bool:
         if self.is_user is None:
             return True
-        storage: RedisStorage2ext = message.bot.get("storage")
+        storage: RedisStorage2ext = message.bot.storage
         user_url = await storage.get_key(StorageKeys.SHEET_URL, user=message.from_user.id)
         return self.is_user == bool(user_url)

@@ -3,7 +3,7 @@ import random
 import typing
 
 from aiogram import types
-from aiogram.utils.exceptions import MessageError
+from aiogram.exceptions import TelegramBadRequest
 
 from telegram.texts import Text
 
@@ -24,5 +24,5 @@ async def watch_fire_indicator(message: types.Message,
             await message.delete()
         except:
             pass
-    except MessageError:
+    except TelegramBadRequest:
         pass

@@ -11,7 +11,7 @@ DATABASE_VERSION = '1.1'
 
 
 async def check_user_base_version(bot, user, sheet_url):
-    storage: RedisStorage2ext = bot["storage"]
+    storage: RedisStorage2ext = bot.storage
     if sheet_url:
         version = await SpreadSheetConnector.check_version(sheet_url)
         if version != DATABASE_VERSION:
@@ -28,8 +28,8 @@ async def check_user_base_version(bot, user, sheet_url):
 
 
 async def user_database_update(bot: Bot):
-    config: Config = bot.get('config')
-    storage: RedisStorage2ext = bot["storage"]
+    config: Config = bot.config
+    storage: RedisStorage2ext = bot.storage
     users = await storage.get_all_users_values()
 
     for u, v in users.items():

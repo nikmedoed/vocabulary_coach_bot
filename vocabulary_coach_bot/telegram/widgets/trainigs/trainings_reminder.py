@@ -2,21 +2,27 @@ import asyncio
 import datetime
 import logging
 
-from aiogram import Bot, types, Dispatcher
-from aiogram.utils.callback_data import CallbackData
-from aiogram.utils.exceptions import BotBlocked
+from aiogram import Bot, Router, types, F
+from aiogram.exceptions import TelegramForbiddenError
+from aiogram.filters import StateFilter
+from aiogram.filters.callback_data import CallbackData
 
 from telegram.texts import Text
 from telegram.utils.aiogram_redis_ext import RedisStorage2ext
-from telegram.utils.constants import StorageKeys
-from telegram.widgets.trainigs.trainings_generate import training_select_message_generator, training_button_stop, \
-    Trainings
+from telegram.utils.constants import StorageKeys, TRAINING_FREQUENCY_OPTIONS
+from telegram.widgets.trainigs.trainings_generate import (
+    training_select_message_generator,
+    training_button_stop,
+    Trainings,
+)
 
-training_reminder_button = CallbackData('TrainRemindOK', 'action')
+
+class TrainingReminderCallbackData(CallbackData, prefix="TrainRemindOK"):
+    action: str
 
 
 async def reminder_trainings(bot: Bot):
-    storage: RedisStorage2ext = bot['storage']
+    storage: RedisStorage2ext = bot.storage
     users = await storage.get_all_users(StorageKeys.TRAINING_FREQUENCY)
     for user in users:
         try:
@@ -32,15 +38,23 @@ async def reminder_trainings(bot: Bot):
                 else:
                     state = state.split(':')[-1]
                     text = Text.trainings.remind_continue.value.format(Text.trainings[state])
-                    markup = types.InlineKeyboardMarkup(row_width=2, resize_keyboard=True).add(*[
+                    markup = types.InlineKeyboardMarkup(inline_keyboard=[[
                         training_button_stop(),
-                        types.InlineKeyboardButton(Text.trainings.remind_read.value,
-                                                   callback_data=training_reminder_button.new(action="ok"))
-                    ])
-                markup.add(*[types.InlineKeyboardButton(
-                    Text.trainings.remind_pause.value.format(i),
-                    callback_data=training_reminder_button.new(action=i)
-                ) for i in [3, 6, 9, 12, 18, 24, 48, 72]])
+                        types.InlineKeyboardButton(
+                            text=Text.trainings.remind_read.value,
+                            callback_data=TrainingReminderCallbackData(action="ok").pack()
+                        ),
+                    ]])
+                rows = [
+                    [types.InlineKeyboardButton(
+                        text=Text.trainings.remind_pause.value.format(i),
+                        callback_data=TrainingReminderCallbackData(action=str(i)).pack()
+                    )] for i in TRAINING_FREQUENCY_OPTIONS
+                ]
+                if markup.inline_keyboard:
+                    markup.inline_keyboard.extend(rows)
+                else:
+                    markup = types.InlineKeyboardMarkup(inline_keyboard=rows)
                 message = await bot.send_message(user, text, reply_markup=markup)
                 await storage.set_key(
                     StorageKeys.PREVIOUS_MESSAGE_DATE,
@@ -56,7 +70,7 @@ async def reminder_trainings(bot: Bot):
                     StorageKeys.PREVIOUS_REMINDER_ID,
                     message.message_id,
                     user=user)
-        except BotBlocked:
+        except TelegramForbiddenError:
             await storage.set_key(StorageKeys.TRAINING_FREQUENCY, None, user=user)
             await storage.set_key(StorageKeys.PREVIOUS_MESSAGE_DATE, None, user=user)
         except Exception as e:
@@ -70,8 +84,9 @@ async def answer_training_continue(query: types.CallbackQuery):
     await query.message.delete()
 
 
-async def answer_training_reminder_pause(query: types.CallbackQuery, storage: RedisStorage2ext, callback_data: dict):
-    pause = callback_data['action']
+async def answer_training_reminder_pause(query: types.CallbackQuery, storage: RedisStorage2ext,
+                                         callback_data: TrainingReminderCallbackData):
+    pause = callback_data.action
     user = query.from_user.id
     await query.answer(Text.trainings.remind_pause_ok.value.format(pause))
     try:
@@ -84,8 +99,7 @@ async def answer_training_reminder_pause(query: types.CallbackQuery, storage: Re
     await storage.set_key(StorageKeys.PREVIOUS_MESSAGE_DATE, time, user=user)
 
 
-def register(dispatcher: Dispatcher):
-    dispatcher.register_callback_query_handler(answer_training_continue,
-                                               training_reminder_button.filter(action="ok"), state=Trainings)
-    dispatcher.register_callback_query_handler(answer_training_reminder_pause,
-                                               training_reminder_button.filter(), state="*")
+def register(router: Router):
+    router.callback_query.register(answer_training_continue, TrainingReminderCallbackData.filter(F.action == "ok"),
+                                   StateFilter(Trainings))
+    router.callback_query.register(answer_training_reminder_pause, TrainingReminderCallbackData.filter())

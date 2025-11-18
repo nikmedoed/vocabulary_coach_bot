@@ -1,47 +1,37 @@
-from aiogram import types, filters, Bot, Dispatcher
-from aiogram.types import BotCommand, bot_command_scope
-from aiogram.utils.callback_data import CallbackData
+from aiogram import F, Router, types
+from aiogram.filters.callback_data import CallbackData
+
+from telegram.filters import AdminFilter
+from telegram.texts import Text
 from ..routine import broadcasting
 from ..utils.aiogram_redis_ext import RedisStorage2ext
 from ..utils.config_types import Config
-
-from telegram.texts import Text
-
-
-async def set_bot_commands(bot: Bot):
-    commands = [BotCommand(command=k.name, description=k.value) for k in Text.commands]
-    # commands = [BotCommand(command=k, description=i) for k, i in Text.commands_admin] + commands
-    await bot.set_my_commands(
-        commands,
-        scope=bot_command_scope.BotCommandScopeAllPrivateChats()
-    )
 
 
 async def forward_from_admin_reply(message: types.Message):
     await message.forward(message.reply_to_message.forward_from.id)
 
 
-async def forward_to_admin(message: types.Message, storage: RedisStorage2ext):
-    config: Config = message.bot.get("config")
+async def forward_to_admin(message: types.Message):
+    config: Config = message.bot.config
     await message.answer(Text.general.forward_to_admin)
     await message.forward(config.admin_id)
 
 
-AdminBrodCastConfirm = CallbackData("admin_broadcast_message_confirm", "message_id")
+class AdminBroadcastConfirm(CallbackData, prefix="admin_broadcast_message_confirm"):
+    message_id: str
 
 
-async def broadcast_message_confirm(message: types.Message, storage: RedisStorage2ext):
-    keyboard = types.InlineKeyboardMarkup(row_width=2).add(*[
-        types.InlineKeyboardButton(
-            a[0],
-            callback_data=AdminBrodCastConfirm.new(message_id=a[1])
-        ) for a in [("No", -1), ("Yes", message.message_id)]
-    ])
+async def broadcast_message_confirm(message: types.Message):
+    buttons = [types.InlineKeyboardButton(text=a[0], callback_data=AdminBroadcastConfirm(message_id=str(a[1])).pack())
+               for a in [("No", -1), ("Yes", message.message_id)]]
+    keyboard = types.InlineKeyboardMarkup(inline_keyboard=[buttons])
     await message.reply(Text.admin.broadcast_message_confirm, reply_markup=keyboard)
 
 
-async def admin_broadcast_message(query: types.CallbackQuery, storage: RedisStorage2ext, callback_data: dict):
-    if callback_data["message_id"] == '-1':
+async def admin_broadcast_message(query: types.CallbackQuery, storage: RedisStorage2ext,
+                                  callback_data: AdminBroadcastConfirm):
+    if callback_data.message_id == '-1':
         await query.answer(Text.admin.broadcast_message_confirm_no)
         await query.message.reply_to_message.delete()
     else:
@@ -50,15 +40,8 @@ async def admin_broadcast_message(query: types.CallbackQuery, storage: RedisStor
     await query.message.delete()
 
 
-async def register(dp: Dispatcher):
-    await set_bot_commands(dp.bot)
-
-    dp.register_message_handler(forward_from_admin_reply,
-                                filters.IsReplyFilter(True),
-                                content_types=types.ContentTypes.ANY,
-                                admin=True)
-    dp.register_message_handler(broadcast_message_confirm,
-                                content_types=types.ContentTypes.ANY, admin=True)
-    dp.register_callback_query_handler(admin_broadcast_message, AdminBrodCastConfirm.filter())
-    dp.register_message_handler(forward_to_admin,
-                                content_types=types.ContentTypes.ANY)
+def register(router: Router):
+    router.message.register(forward_from_admin_reply, F.reply_to_message.forward_from, AdminFilter(admin=True))
+    router.message.register(broadcast_message_confirm, AdminFilter(admin=True))
+    router.callback_query.register(admin_broadcast_message, AdminBroadcastConfirm.filter())
+    router.message.register(forward_to_admin)
