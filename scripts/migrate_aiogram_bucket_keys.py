@@ -1,9 +1,14 @@
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 from typing import Iterator
 
 from redis import Redis
+
+ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 
 from vocabulary_coach_bot.telegram.utils.config_types import readconfig
 
@@ -19,12 +24,15 @@ def iter_keys(client: Redis, pattern: str, batch_size: int = 500) -> Iterator[st
 
 
 def migrate(client: Redis, prefix: str, batch_size: int = 500) -> dict:
-    pattern = f"{prefix}:*:*:data"
-    stats = {"processed": 0, "migrated": 0, "missing": 0}
+    pattern = f"{prefix}:*:*:bucket"
+    stats = {"processed": 0, "migrated": 0, "missing": 0, "skipped_existing": 0}
 
     for key in iter_keys(client, pattern, batch_size):
         stats["processed"] += 1
-        target_key = f"{key.rsplit(':', 1)[0]}:bucket"
+        target_key = f"{key.rsplit(':', 1)[0]}:data"
+        if client.exists(target_key):
+            stats["skipped_existing"] += 1
+            continue
         value = client.get(key)
         if value is None:
             stats["missing"] += 1
@@ -40,7 +48,8 @@ def migrate(client: Redis, prefix: str, batch_size: int = 500) -> dict:
 
 
 def main() -> int:
-    config = readconfig()
+    config_path = ROOT_DIR / "vocabulary_coach_bot" / "global_settings.ini"
+    config = readconfig(str(config_path))
     redis_conf = config.redis_conf
     if redis_conf is None:
         raise SystemExit("Redis config is missing in global_settings.ini")
@@ -52,9 +61,8 @@ def main() -> int:
     )
     stats = migrate(client, redis_conf.prefix)
     print(
-        "Done. Processed={processed} migrated={migrated} missing={missing}".format(
-            **stats
-        )
+        "Done. Processed={processed} migrated={migrated} skipped_existing={skipped_existing} "
+        "missing={missing}".format(**stats)
     )
     return 0
 
