@@ -4,13 +4,6 @@ from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
 
-try:
-    import uvloop
-except ImportError:  # uvloop is optional and only available on Unix-like systems
-    uvloop = None
-else:
-    uvloop.install()
-
 from .handlres_main import register_routers, set_bot_commands
 from .middleware import register_middleware
 from .utils.aiogram_redis_ext import RedisStorage2ext

@@ -4,4 +4,3 @@ aioredis[hiredis]
 APScheduler
 rapidfuzz
 redis
-uvloop; sys_platform != "win32"
