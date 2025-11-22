@@ -5,6 +5,12 @@ from collections import defaultdict
 from aiogram.fsm.storage.base import DefaultKeyBuilder, StorageKey, StateType
 from aiogram.fsm.storage.redis import RedisStorage
 from redis.asyncio import Redis
+from redis.asyncio.connection import ConnectionPool
+
+try:
+    from redis.asyncio.connection import HiredisParser
+except ImportError:  # pragma: no cover - hiredis not installed
+    HiredisParser = None  # type: ignore[assignment]
 
 
 class RedisStorage2ext(RedisStorage):
@@ -19,7 +25,11 @@ class RedisStorage2ext(RedisStorage):
         state_ttl: typing.Optional[int] = None,
         data_ttl: typing.Optional[int] = None,
     ):
-        redis_client = Redis(host=host, port=port, db=db, password=password)
+        pool_kwargs = dict(host=host, port=port, db=db, password=password)
+        if HiredisParser is not None:
+            pool_kwargs["parser_class"] = HiredisParser
+        pool = ConnectionPool(**pool_kwargs)
+        redis_client = Redis(connection_pool=pool)
         key_builder = DefaultKeyBuilder(prefix=prefix)
         super().__init__(
             redis=redis_client,

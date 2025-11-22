@@ -1,6 +1,6 @@
 aiogram
 aiohttp
-aioredis
+aioredis[hiredis]
 APScheduler
 rapidfuzz
 redis
